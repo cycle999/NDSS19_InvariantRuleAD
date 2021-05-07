@@ -4,13 +4,12 @@ Created on 12 Jun 2017
 @author: cheng_feng
 '''
 
-
 import pandas as pd
 import numpy as np
 from sklearn import mixture
 from sklearn.linear_model import Lasso
 from sklearn import metrics
-from AD import Util
+import Util
 import time
 
 'parameters to tune'
@@ -19,6 +18,7 @@ sigma = 1.1 #buffer scaler
 theta_value = 0.08 #same as in the paper
 gamma_value = 0.9 #same as in the paper
 max_k=4
+mode_num=1
 
 'data preprocessing'
 training_data,test_data = [],[]
@@ -292,8 +292,8 @@ start_time = time.time()
 rule_list_0, item_dict_0 = Util.getRules(training_data, dead_entries, keyArray, mode=0, gamma=gamma_value, max_k=max_k, theta=theta_value)
 print('finish mode 0')
 ##mode 2 is quite costly, use mode 1 if want to save time
-rule_list_1, item_dict_1 = Util.getRules(training_data, dead_entries, keyArray, mode=2, gamma=gamma_value, max_k=max_k, theta=theta_value)
-print('finish mode 1')
+rule_list_1, item_dict_1 = Util.getRules(training_data, dead_entries, keyArray, mode=mode_num, gamma=gamma_value, max_k=max_k, theta=theta_value)
+print('finish mode',mode_num)
 end_time = time.time()
 time_cost = (end_time-start_time)*1.0/60
 print('rule mining time cost: ' + str(time_cost))

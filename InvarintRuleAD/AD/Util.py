@@ -4,6 +4,10 @@ Created on 4 Sep 2017
 @author: cf1510
 '''
 
+import sys
+sys.path.append("..")
+print(sys.path)
+
 from sklearn.metrics import confusion_matrix
 from RuleMiningUtil import MISTree
 from RuleMiningUtil import RuleGenerator

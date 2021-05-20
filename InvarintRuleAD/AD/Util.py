@@ -45,24 +45,26 @@ def conInvarEntry(target_var, threshold, lessOrGreater, max_dict, min_dict, coef
     msg += str(threshold_value)
     return msg
 
-def conMarginEntry(target_var, threshold, margin, max_dict, min_dict):
-    threshold_value = threshold*(max_dict[target_var]-min_dict[target_var]) + min_dict[target_var]  
-    
+
+def conMarginEntry(target_var, threshold, margin):
+    # threshold_value = threshold*(max_dict[target_var]-min_dict[target_var]) + min_dict[target_var]
+
     msg = ''
     if margin == 0:
-        msg +=  target_var + '<' + str(threshold_value)
+        msg += target_var + '<' + str(threshold)
     else:
-        msg +=  target_var + '>' + str(threshold_value)
-    
-    return msg   
+        msg += target_var + '>' + str(threshold)
 
-def conRangeEntry(target_var, lb, ub, max_dict, min_dict):
-    threshold_lb = lb*(max_dict[target_var]-min_dict[target_var]) + min_dict[target_var] 
-    threshold_up = ub*(max_dict[target_var]-min_dict[target_var]) + min_dict[target_var] 
-    
+    return msg
+
+
+def conRangeEntry(target_var, lb, ub):
+    # threshold_lb = lb*(max_dict[target_var]-min_dict[target_var]) + min_dict[target_var]
+    # threshold_up = ub*(max_dict[target_var]-min_dict[target_var]) + min_dict[target_var]
+
     msg = ''
-    msg += str(threshold_lb) + '<' + target_var + '<' + str(threshold_up)
-    
+    msg += str(lb) + '<' + target_var + '<' + str(ub)
+
     return msg
 
 
@@ -91,7 +93,7 @@ def getRules(training_data, dead_entries, keyArray, mode=0, gamma=0.4, max_k=4, 
         index_dict[entry] = index
         item_dict[index] = entry
         index += 1
-    # print index_dict
+    print (index_dict)
     min_num = len(data)*theta
 #     print 'min_num: ' + str(min_num) 
     for entry in data:
@@ -100,18 +102,46 @@ def getRules(training_data, dead_entries, keyArray, mode=0, gamma=0.4, max_k=4, 
 #         print entry + ': ' + str(len(data[data[entry] == 1])*1.0)
         data.loc[data[entry]==1, entry] = index_dict[entry]
     df_list = data.values.tolist()
+    #print('df_list = ', df_list)
     dataset = []
     for datalist in df_list:
         temptlist = filter(lambda a: a != 0, datalist)
         numbers = list(temptlist)
         dataset.append(numbers)
-        
+    #print('dataset = ')
+    #print(dataset)
     item_count_dict = MISTree.count_items(dataset)
     root, MIN_freq_item_header_table, MIN, MIN_freq_item_header_dict = MISTree.genMIS_tree(dataset, item_count_dict, minSup_dict)
  
     freq_patterns, support_data = MISTree.CFP_growth(root, MIN_freq_item_header_table, minSup_dict, max_k)
+
+    #print('freq_patterns = ')
+    #print(freq_patterns)
     L = RuleGenerator.filterClosedPatterns(freq_patterns, support_data, item_count_dict, max_k, MIN)
-    
+
+    closedL = "../data/freq_patterns/gamma=" + str(gamma) + '&theta=' + str(theta) + ".txt"
+    with open(closedL, "w") as myfile:
+        #for i in range(1, len(keyArray) + 1):
+            #myfile.write('P' + str(i) + ':' + '\n')
+        for close_freq in L:
+            myfile.write(str(close_freq) + '\n')
+            myfile.write('\n')
+
+            myfile.write('--------------------------------------------------------------------------- ' + '\n')
+        myfile.close()
+
+    support_file = "../data/support_data/gamma=" + str(gamma) + '&theta=' + str(theta) + ".txt"
+    with open(support_file, "w") as myfile:
+        #for i in range(1, len(keyArray) + 1):
+            # myfile.write('P' + str(i) + ':' + '\n')
+        for support_item in support_data:
+            myfile.write(str(support_item) + '\n')
+            myfile.write('\n')
+
+            myfile.write('--------------------------------------------------------------------------- ' + '\n')
+        myfile.close()
+
+
     rules = RuleGenerator.generateRules(L, support_data, MIN_freq_item_header_dict, minSup_dict, min_confidence=1)
     
     valid_rules = []

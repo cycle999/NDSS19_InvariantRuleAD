@@ -45,7 +45,6 @@ def conInvarEntry(target_var, threshold, lessOrGreater, max_dict, min_dict, coef
     msg += str(threshold_value)
     return msg
 
-
 def conMarginEntry(target_var, threshold, margin):
     # threshold_value = threshold*(max_dict[target_var]-min_dict[target_var]) + min_dict[target_var]
 
@@ -67,7 +66,43 @@ def conRangeEntry(target_var, lb, ub):
 
     return msg
 
+def findOverlapping(min_ls, max_ls, ab_overlapping = 0.1, re_overlapping = 0.1): #only 2 values in two lists
+    if max_ls[0] > max_ls[1]:
+        max_a = max_ls[0]
+        min_a = min_ls[0]
+        max_b = max_ls[1]
+        min_b = min_ls[1]
+    else:
+        max_a = max_ls[1]
+        min_a = min_ls[1]
+        max_b = max_ls[0]
+        min_b = min_ls[0]
+    if min_b <= min_a:
+        dif_value = max_b - min_a
+        if dif_value <= 0:
+            overlap = False
+            overlap_range = 0
+        elif (dif_value <= ab_overlapping) and (dif_value / (max_a - min_a) <= re_overlapping or dif_value / (max_b - min_b) <= re_overlapping):
+            overlap = False
+            overlap_range = [min_a, max_b]
+        else:
+            overlap = True
+            overlap_range = [min_a, max_b]
+    else:
+        if (max_b - min_b) / (max_a - min_a) <= re_overlapping:
+            overlap = False
+            overlap_range = [min_b, max_b]
+        else:
+            overlap = True
+            overlap_range = [min_b, max_b]
+    return overlap, overlap_range
 
+def appendIvar(invar_ls, min_ls, max_ls, dis_range):
+    for i in range(len(min_ls)):
+        if max_ls[i] - min_ls[i] <= dis_range:
+            invar_ls.append(max_ls[i])
+            invar_ls.append(min_ls[i])
+    return invar_ls
 
 def getRules(training_data, dead_entries, keyArray, mode=0, gamma=0.4, max_k=4, theta=0.1):
     data = training_data.copy()
@@ -93,7 +128,7 @@ def getRules(training_data, dead_entries, keyArray, mode=0, gamma=0.4, max_k=4, 
         index_dict[entry] = index
         item_dict[index] = entry
         index += 1
-    print (index_dict)
+    # print index_dict
     min_num = len(data)*theta
 #     print 'min_num: ' + str(min_num) 
     for entry in data:
@@ -102,46 +137,18 @@ def getRules(training_data, dead_entries, keyArray, mode=0, gamma=0.4, max_k=4, 
 #         print entry + ': ' + str(len(data[data[entry] == 1])*1.0)
         data.loc[data[entry]==1, entry] = index_dict[entry]
     df_list = data.values.tolist()
-    #print('df_list = ', df_list)
     dataset = []
     for datalist in df_list:
         temptlist = filter(lambda a: a != 0, datalist)
         numbers = list(temptlist)
         dataset.append(numbers)
-    #print('dataset = ')
-    #print(dataset)
+        
     item_count_dict = MISTree.count_items(dataset)
     root, MIN_freq_item_header_table, MIN, MIN_freq_item_header_dict = MISTree.genMIS_tree(dataset, item_count_dict, minSup_dict)
  
     freq_patterns, support_data = MISTree.CFP_growth(root, MIN_freq_item_header_table, minSup_dict, max_k)
-
-    #print('freq_patterns = ')
-    #print(freq_patterns)
     L = RuleGenerator.filterClosedPatterns(freq_patterns, support_data, item_count_dict, max_k, MIN)
-
-    closedL = "../data/freq_patterns/gamma=" + str(gamma) + '&theta=' + str(theta) + ".txt"
-    with open(closedL, "w") as myfile:
-        #for i in range(1, len(keyArray) + 1):
-            #myfile.write('P' + str(i) + ':' + '\n')
-        for close_freq in L:
-            myfile.write(str(close_freq) + '\n')
-            myfile.write('\n')
-
-            myfile.write('--------------------------------------------------------------------------- ' + '\n')
-        myfile.close()
-
-    support_file = "../data/support_data/gamma=" + str(gamma) + '&theta=' + str(theta) + ".txt"
-    with open(support_file, "w") as myfile:
-        #for i in range(1, len(keyArray) + 1):
-            # myfile.write('P' + str(i) + ':' + '\n')
-        for support_item in support_data:
-            myfile.write(str(support_item) + '\n')
-            myfile.write('\n')
-
-            myfile.write('--------------------------------------------------------------------------- ' + '\n')
-        myfile.close()
-
-
+    
     rules = RuleGenerator.generateRules(L, support_data, MIN_freq_item_header_dict, minSup_dict, min_confidence=1)
     
     valid_rules = []
